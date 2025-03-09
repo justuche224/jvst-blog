@@ -20,7 +20,7 @@ export async function generateMetadata({
   }
 
   // Base URL for canonical links and images
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://yourblog.com";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://kyourblog.com";
 
   return {
     title: post.title,
