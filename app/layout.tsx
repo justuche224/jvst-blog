@@ -9,8 +9,9 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Markdown Blog",
-  description: "A simple markdown blog built with Next.js",
+  title: "Jvst Blog",
+  description: "My Persornal Tech Blog",
+  keywords: ["blog", "tech", "personal", "jvstuche"],
 };
 
 export default function RootLayout({
@@ -31,7 +32,7 @@ export default function RootLayout({
             <header className="border-b flex justify-center items-center">
               <div className="container flex h-16 items-center justify-between">
                 <Link href="/" className="text-xl font-bold">
-                  Markdown Blog
+                  Jvst Blog
                 </Link>
                 <nav className="flex items-center gap-4">
                   <Link href="/">Home</Link>
@@ -47,7 +48,7 @@ export default function RootLayout({
             <footer className="border-t py-6">
               <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
                 <p className="text-center text-sm text-muted-foreground md:text-left">
-                  &copy; {new Date().getFullYear()} Markdown Blog. All rights
+                  &copy; {new Date().getFullYear()} Jvst Blog. All rights
                   reserved.
                 </p>
               </div>

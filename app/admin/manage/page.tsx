@@ -8,7 +8,7 @@ import DeletePostButton from "@/components/delete-post-button";
 
 export const metadata = {
   title: "Manage Blog Posts",
-  description: "Manage your blog posts",
+  description: "Create, Edit, and Delete blog posts",
 };
 
 export default async function ManagePostsPage() {

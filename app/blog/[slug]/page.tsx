@@ -20,13 +20,14 @@ export async function generateMetadata({
   }
 
   // Base URL for canonical links and images
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://kyourblog.com";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "https://jvst-blog.vercel.app/";
 
   return {
     title: post.title,
     description: post.excerpt,
     authors: [{ name: post.author || "Blog Author" }],
-    publisher: "Your Blog Name",
+    publisher: "Jvst Blog",
     keywords: post.tags || [],
     category: post.category,
     openGraph: {
@@ -35,7 +36,7 @@ export async function generateMetadata({
       url: `${baseUrl}/blog/${post.slug}`,
       title: post.title,
       description: post.excerpt,
-      siteName: "Your Blog Name",
+      siteName: "Jvst Blog",
       publishedTime: post.date,
       modifiedTime: post.updatedAt || post.date,
       images: [
@@ -58,7 +59,7 @@ export async function generateMetadata({
         post.coverImage ||
           `${baseUrl}/api/og?title=${encodeURIComponent(post.title)}`,
       ],
-      creator: "@yourtwitterhandle",
+      creator: "@jvstuche",
     },
     alternates: {
       canonical: `${baseUrl}/blog/${post.slug}`,
@@ -126,15 +127,15 @@ export default async function BlogPost({
               },
               publisher: {
                 "@type": "Organization",
-                name: "Your Blog Name",
+                name: "Jvst Blog",
                 logo: {
                   "@type": "ImageObject",
-                  url: "https://yourblog.com/logo.png",
+                  url: "https://jvst-blog.vercel.app/logo.png",
                 },
               },
               mainEntityOfPage: {
                 "@type": "WebPage",
-                "@id": `https://yourblog.com/blog/${post.slug}`,
+                "@id": `https://jvst-blog.vercel.app/blog/${post.slug}`,
               },
             }),
           }}
