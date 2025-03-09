@@ -4,6 +4,7 @@ import type React from "react";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { createPost } from "@/lib/actions";
 import { toast } from "@/hooks/use-toast";
 import MarkdownEditor from "@/components/markdown-editor";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, ListFilter } from "lucide-react";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -24,16 +27,19 @@ export default function AdminPage() {
     tags: "",
     category: "",
   });
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormError(null); // Clear error when user makes changes
   };
 
   const handleContentChange = (content: string) => {
     setFormData((prev) => ({ ...prev, content }));
+    setFormError(null); // Clear error when user makes changes
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,6 +56,7 @@ export default function AdminPage() {
 
     try {
       setIsSubmitting(true);
+      setFormError(null);
 
       const slug = await createPost({
         title: formData.title,
@@ -71,8 +78,14 @@ export default function AdminPage() {
       router.push(`/blog/${slug}`);
       router.refresh();
     } catch (error) {
-      console.log("Error creating post:", error);
-
+      console.error("Error creating post:", error);
+      if (error instanceof Error) {
+        setFormError(
+          error.message || "Failed to create post. Please try again."
+        );
+      } else {
+        setFormError("Failed to create post. Please try again.");
+      }
       toast({
         title: "Error",
         description: "Failed to create post",
@@ -84,9 +97,25 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="container py-10">
+    <div className="container mx-auto py-10">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Create New Post</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Create New Post</h1>
+          <Link href="/admin/manage">
+            <Button variant="outline">
+              <ListFilter className="mr-2 h-4 w-4" />
+              Manage Posts
+            </Button>
+          </Link>
+        </div>
+
+        {formError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
@@ -99,6 +128,10 @@ export default function AdminPage() {
               placeholder="Post title"
               required
             />
+            <p className="text-xs text-muted-foreground">
+              Special characters like colons (:) are allowed and will be
+              properly escaped.
+            </p>
           </div>
 
           <div className="space-y-2">

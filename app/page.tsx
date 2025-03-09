@@ -1,3 +1,4 @@
+import React from "react";
 import Link from "next/link";
 import { getAllPosts } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
@@ -6,7 +7,7 @@ export default async function HomePage() {
   const posts = await getAllPosts();
 
   return (
-    <div className="container py-10">
+    <div className="container mx-auto py-10">
       <h1 className="text-4xl font-bold mb-8">Blog Posts</h1>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {posts.map((post) => (

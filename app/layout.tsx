@@ -1,14 +1,16 @@
 import type React from "react";
+import { Inter } from "next/font/google";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import "./globals.css";
 
+const inter = Inter({ subsets: ["latin"] });
+
 export const metadata = {
   title: "Markdown Blog",
   description: "A simple markdown blog built with Next.js",
-  generator: "v0.dev",
 };
 
 export default function RootLayout({
@@ -18,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <body className={inter.className}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -26,13 +28,14 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <div className="flex min-h-screen flex-col">
-            <header className="border-b">
+            <header className="border-b flex justify-center items-center">
               <div className="container flex h-16 items-center justify-between">
                 <Link href="/" className="text-xl font-bold">
                   Markdown Blog
                 </Link>
                 <nav className="flex items-center gap-4">
                   <Link href="/">Home</Link>
+                  <Link href="/admin/manage">Manage</Link>
                   <Link href="/admin">
                     <Button variant="outline">Write Post</Button>
                   </Link>
@@ -55,5 +58,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-import "./globals.css";
