@@ -6,13 +6,14 @@ import { formatDate } from "@/lib/utils";
 import { Tag } from "lucide-react";
 
 interface TagPageProps {
-  params: {
+  params: Promise<{
     tag: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: TagPageProps) {
-  const decodedTag = decodeURIComponent(params.tag);
+  const { tag } = await params;
+  const decodedTag = decodeURIComponent(tag);
   const formattedTag = decodedTag.charAt(0).toUpperCase() + decodedTag.slice(1);
 
   return {
@@ -39,7 +40,8 @@ export async function generateStaticParams() {
 }
 
 export default async function TagPage({ params }: TagPageProps) {
-  const decodedTag = decodeURIComponent(params.tag);
+  const { tag } = await params;
+  const decodedTag = decodeURIComponent(tag);
   const formattedTag = decodedTag.charAt(0).toUpperCase() + decodedTag.slice(1);
 
   const allPosts = await getAllPosts();
