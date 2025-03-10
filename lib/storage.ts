@@ -20,10 +20,17 @@ const isProduction = process.env.NODE_ENV === "production";
 
 // Helper function to get all post filenames
 export async function getPostFilenames(): Promise<string[]> {
-  if (isProduction) {
+  if (!isProduction) {
     try {
       const { blobs } = await list({ prefix: "posts/" });
-      return blobs.map((blob) => blob.pathname.replace("posts/", ""));
+      console.log("file names");
+      console.log(blobs);
+      const blobsData = blobs.map((blob) =>
+        blob.pathname.replace("posts/", "")
+      );
+      console.log("data");
+      console.log(blobsData);
+      return blobsData;
     } catch (error) {
       console.error("Error listing blobs:", error);
       return [];
@@ -45,14 +52,15 @@ export async function getPostFilenames(): Promise<string[]> {
 
 // Helper function to read a post file
 export async function readPostFile(filename: string): Promise<string> {
-  if (isProduction) {
+  if (!isProduction) {
     try {
-      // List blobs to find the specific file's metadata
-      const { blobs } = await list({ prefix: `posts/${filename}`, limit: 1 });
-      if (!blobs.length) {
+      // List all blobs under 'posts/'
+      const { blobs } = await list({ prefix: "posts/" });
+      // Find the blob with the exact pathname
+      const blob = blobs.find((b) => b.pathname === `posts/${filename}`);
+      if (!blob) {
         throw new Error(`Post file not found: ${filename}`);
       }
-      const blob = blobs[0];
       // Fetch the content using the downloadUrl
       const response = await fetch(blob.downloadUrl);
       if (!response.ok) {
@@ -80,12 +88,14 @@ export async function writePostFile(
   filename: string,
   content: string
 ): Promise<void> {
-  if (isProduction) {
+  if (!isProduction) {
     try {
-      await put(`posts/${filename}`, content, {
+      const data = await put(`posts/${filename}`, content, {
         contentType: "text/markdown",
         access: "public",
       });
+      console.log("data");
+      console.log(data);
     } catch (error) {
       console.error(`Error writing blob: ${filename}`, error);
       throw error;
@@ -103,7 +113,7 @@ export async function writePostFile(
 
 // Helper function to delete a post file
 export async function deletePostFile(filename: string): Promise<void> {
-  if (isProduction) {
+  if (!isProduction) {
     try {
       await del(`posts/${filename}`);
     } catch (error) {
