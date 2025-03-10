@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import Markdown from "@/components/markdown";
+import { Badge } from "@/components/ui/badge";
+import { Folder, Tag } from "lucide-react";
+import Link from "next/link";
 
 export async function generateMetadata({
   params,
@@ -92,7 +95,51 @@ export default async function BlogPost({
       <article className="max-w-3xl mx-auto">
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">{post.title}</h1>
-          <p className="text-muted-foreground">{formatDate(post.date)}</p>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground mb-4">
+            <time dateTime={post.date}>{formatDate(post.date)}</time>
+            {post.author && (
+              <>
+                <span>•</span>
+                <span>{post.author}</span>
+              </>
+            )}
+          </div>
+
+          {/* Category and Tags */}
+          <div className="flex flex-wrap gap-3 mb-6">
+            {post.category && (
+              <Link
+                href={`/category/${encodeURIComponent(
+                  post.category.toLowerCase()
+                )}`}
+                className="inline-flex items-center"
+              >
+                <Badge variant="outline" className="gap-1 px-3 py-1 text-sm">
+                  <Folder className="h-3.5 w-3.5" />
+                  {post.category}
+                </Badge>
+              </Link>
+            )}
+
+            {post.tags && post.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {post.tags.map((tag) => (
+                  <Link
+                    key={tag}
+                    href={`/tag/${encodeURIComponent(tag.toLowerCase())}`}
+                  >
+                    <Badge
+                      variant="secondary"
+                      className="gap-1 px-3 py-1 text-sm"
+                    >
+                      <Tag className="h-3.5 w-3.5" />
+                      {tag}
+                    </Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {post.coverImage && (
@@ -137,6 +184,8 @@ export default async function BlogPost({
                 "@type": "WebPage",
                 "@id": `https://jvst-blog.vercel.app/blog/${post.slug}`,
               },
+              keywords: post.tags?.join(", "),
+              articleSection: post.category,
             }),
           }}
         />

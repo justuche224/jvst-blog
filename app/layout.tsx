@@ -37,6 +37,7 @@ export default function RootLayout({
                 <nav className="flex items-center gap-4">
                   <Link href="/">Home</Link>
                   <Link href="/admin/manage">Manage</Link>
+                  <Link href="/tags">Tags</Link>
                   <Link href="/admin">
                     <Button variant="outline">Write Post</Button>
                   </Link>

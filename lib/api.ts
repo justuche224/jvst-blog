@@ -1,18 +1,18 @@
-import fs from "fs";
-import path from "path";
-import matter from "gray-matter";
+import { getPostFilenames, readPostFile, parseFrontmatter } from "./storage";
 
-const postsDirectory = path.join(process.cwd(), "content/posts");
-
-// Ensure the posts directory exists
-try {
-  if (!fs.existsSync(postsDirectory)) {
-    fs.mkdirSync(postsDirectory, { recursive: true });
-  }
-} catch (error) {
-  console.error("Failed to create posts directory", error);
+// Define the expected structure of the frontmatter
+interface Frontmatter {
+  title?: string;
+  date?: string | Date;
+  excerpt?: string;
+  coverImage?: string;
+  author?: string;
+  tags?: string[];
+  category?: string;
+  updatedAt?: string | Date;
 }
 
+// Define the Post interface
 export interface Post {
   slug: string;
   title: string;
@@ -28,49 +28,41 @@ export interface Post {
 
 export async function getAllPosts(): Promise<Post[]> {
   try {
-    // Get all markdown files from the posts directory
-    if (!fs.existsSync(postsDirectory)) {
-      return [];
-    }
+    // Get all markdown files
+    const fileNames = await getPostFilenames();
 
-    const fileNames = fs.readdirSync(postsDirectory);
-
-    const posts = fileNames
+    const postsPromises = fileNames
       .filter((fileName) => fileName.endsWith(".md"))
-      .map((fileName) => {
-        // Remove ".md" from file name to get slug
+      .map(async (fileName) => {
         const slug = fileName.replace(/\.md$/, "");
 
         try {
-          // Read markdown file as string
-          const fullPath = path.join(postsDirectory, fileName);
-          const fileContents = fs.readFileSync(fullPath, "utf8");
+          const fileContents = await readPostFile(fileName);
+          const { data, content } = parseFrontmatter(fileContents);
 
-          // Use gray-matter to parse the post metadata section
-          const { data, content } = matter(fileContents);
+          // Type assertion for frontmatter data
+          const frontmatter = data as Frontmatter;
 
-          // Validate and format the data
           const post: Post = {
             slug,
-            title: data.title || "Untitled",
-            date: data.date
-              ? new Date(data.date).toISOString()
+            title: frontmatter.title || "Untitled",
+            date: frontmatter.date
+              ? new Date(frontmatter.date).toISOString()
               : new Date().toISOString(),
-            excerpt: data.excerpt || "",
-            coverImage: data.coverImage || undefined,
+            excerpt: frontmatter.excerpt || "",
+            coverImage: frontmatter.coverImage,
             content,
-            author: data.author,
-            tags: data.tags,
-            category: data.category,
-            updatedAt: data.updatedAt
-              ? new Date(data.updatedAt).toISOString()
+            author: frontmatter.author,
+            tags: frontmatter.tags,
+            category: frontmatter.category,
+            updatedAt: frontmatter.updatedAt
+              ? new Date(frontmatter.updatedAt).toISOString()
               : undefined,
           };
 
           return post;
         } catch (error) {
           console.error(`Error parsing post ${fileName}:`, error);
-          // Return a placeholder post for files that can't be parsed
           return {
             slug,
             title: `Error: Could not parse ${fileName}`,
@@ -82,8 +74,8 @@ export async function getAllPosts(): Promise<Post[]> {
         }
       });
 
-    // Filter out any null values from posts that couldn't be parsed
-    const validPosts = posts.filter((post) => post !== null);
+    const posts = await Promise.all(postsPromises);
+    const validPosts = posts.filter((post) => post !== null) as Post[];
 
     // Sort posts by date in descending order
     return validPosts.sort(
@@ -97,112 +89,57 @@ export async function getAllPosts(): Promise<Post[]> {
 
 export async function getPostBySlug(slug: string): Promise<Post | null> {
   try {
-    const fullPath = path.join(postsDirectory, `${slug}.md`);
+    const fileName = `${slug}.md`;
+    const fileContents = await readPostFile(fileName);
+    const { data, content } = parseFrontmatter(fileContents);
 
-    if (!fs.existsSync(fullPath)) {
-      return null;
-    }
+    // Type assertion for frontmatter data
+    const frontmatter = data as Frontmatter;
 
-    const fileContents = fs.readFileSync(fullPath, "utf8");
-
-    try {
-      const { data, content } = matter(fileContents);
-
-      return {
-        slug,
-        title: data.title || "Untitled",
-        date: data.date
-          ? new Date(data.date).toISOString()
-          : new Date().toISOString(),
-        excerpt: data.excerpt || "",
-        coverImage: data.coverImage || undefined,
-        content,
-        author: data.author,
-        tags: data.tags,
-        category: data.category,
-        updatedAt: data.updatedAt
-          ? new Date(data.updatedAt).toISOString()
-          : undefined,
-      };
-    } catch (error) {
-      console.error(`Error parsing frontmatter for ${slug}:`, error);
-
-      // Try to extract content even if frontmatter parsing fails
-      const contentMatch = fileContents.match(
-        /---\n([\s\S]*?)\n---\n([\s\S]*)/
-      );
-      const extractedContent = contentMatch
-        ? contentMatch[2]
-        : "Content could not be extracted.";
-
-      return {
-        slug,
-        title: `Error: Could not parse frontmatter for ${slug}`,
-        date: new Date().toISOString(),
-        excerpt:
-          "This post could not be loaded properly due to a formatting error.",
-        content: extractedContent,
-      };
-    }
+    return {
+      slug,
+      title: frontmatter.title || "Untitled",
+      date: frontmatter.date
+        ? new Date(frontmatter.date).toISOString()
+        : new Date().toISOString(),
+      excerpt: frontmatter.excerpt || "",
+      coverImage: frontmatter.coverImage,
+      content,
+      author: frontmatter.author,
+      tags: frontmatter.tags,
+      category: frontmatter.category,
+      updatedAt: frontmatter.updatedAt
+        ? new Date(frontmatter.updatedAt).toISOString()
+        : undefined,
+    };
   } catch (error) {
     console.error(`Error getting post by slug: ${slug}`, error);
-    return null;
-  }
-}
 
-// Function to fix existing posts with problematic frontmatter
-export async function fixPostFrontmatter(slug: string): Promise<boolean> {
-  try {
-    const fullPath = path.join(postsDirectory, `${slug}.md`);
+    // Handle case where file exists but frontmatter parsing fails
+    if (typeof error === "object" && error !== null && "message" in error) {
+      const fileName = `${slug}.md`;
+      try {
+        const fileContents = await readPostFile(fileName);
+        const contentMatch = fileContents.match(
+          /---\n([\s\S]*?)\n---\n([\s\S]*)/
+        );
+        const extractedContent = contentMatch
+          ? contentMatch[2]
+          : "Content could not be extracted.";
 
-    if (!fs.existsSync(fullPath)) {
-      return false;
-    }
-
-    const fileContents = fs.readFileSync(fullPath, "utf8");
-
-    // Try to extract the content and problematic frontmatter
-    const contentMatch = fileContents.match(/---\n([\s\S]*?)\n---\n([\s\S]*)/);
-
-    if (!contentMatch) {
-      return false;
-    }
-
-    const frontmatterText = contentMatch[1];
-    const content = contentMatch[2];
-
-    // Parse frontmatter line by line to handle special characters
-    const frontmatterLines = frontmatterText.split("\n");
-    const fixedFrontmatterLines = frontmatterLines.map((line) => {
-      if (line.includes(":")) {
-        const [key, ...valueParts] = line.split(":");
-        const value = valueParts.join(":").trim();
-
-        // Quote the value if it contains special characters
-        if (
-          value.includes(":") ||
-          value.includes('"') ||
-          value.includes("'") ||
-          value.includes("\n") ||
-          value.includes("#")
-        ) {
-          return `${key}: "${value.replace(/"/g, '\\"')}"`;
-        }
+        return {
+          slug,
+          title: `Error: Could not parse frontmatter for ${slug}`,
+          date: new Date().toISOString(),
+          excerpt:
+            "This post could not be loaded properly due to a formatting error.",
+          content: extractedContent,
+        };
+      } catch (readError) {
+        console.error(`File not found or unreadable: ${fileName}`, readError);
+        return null;
       }
-      return line;
-    });
-
-    // Reconstruct the file
-    const fixedFileContents = `---\n${fixedFrontmatterLines.join(
-      "\n"
-    )}\n---\n${content}`;
-
-    // Write the fixed file
-    fs.writeFileSync(fullPath, fixedFileContents);
-
-    return true;
-  } catch (error) {
-    console.error(`Error fixing frontmatter for ${slug}:`, error);
-    return false;
+    }
+    return null;
   }
 }
